@@ -28,7 +28,7 @@ fun MIN: one Int { 0 }
 fun MAXCOL: one Int { 3 }
 fun MAXROW: one Int { 3 }
 -- TODO: come up with a good equation that determines the number of mines based on board dimensions
-fun MAXBOMBS: one Int { 4 }
+fun MAXBOMBS: one Int { 7 }
 
 -- make sure that all boards are a certain size
 pred wellformed[b: Board] {

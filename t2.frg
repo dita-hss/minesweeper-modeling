@@ -28,7 +28,7 @@ fun MIN: one Int { 0 }
 fun MAXCOL: one Int { 3 }
 fun MAXROW: one Int { 3 }
 -- TODO: come up with a good equation that determines the number of mines based on board dimensions
-fun MAXBOMBS: one Int { 7 }
+fun MAXMINES: one Int { 7 }
 
 -- make sure that all boards are a certain size
 pred wellformed[b: Board] {
@@ -41,7 +41,7 @@ pred wellformed[b: Board] {
                                                                                        SolutionBoard.mines[x][y] = 0 or SolutionBoard.mines[x][y] = 1}
     
     -- no more than 4 mines
-    #{row, col: Int | SolutionBoard.mines[row][col] = 1} = MAXBOMBS
+    #{row, col: Int | SolutionBoard.mines[row][col] = 1} = MAXMINES
 }
 
 -- initial board has all cells hidden

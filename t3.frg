@@ -21,10 +21,10 @@ one sig Game {
 -- constants for rows and columns
 fun MIN: one Int { 0 }
 -- TODO: we can make board bigger but for now it is 4x4
-fun MAXCOL: one Int { 3 }
-fun MAXROW: one Int { 3 }
+fun MAXCOL: one Int { 7 }
+fun MAXROW: one Int { 7 }
 -- TODO: come up with a good equation that determines the number of mines based on board dimensions
-fun MAXMINES: one Int { 7 }
+fun MAXMINES: one Int { 12 }
 
 -- make sure that all boards are a certain size
 pred wellformed[b: Board] {
@@ -51,4 +51,4 @@ pred game_trace {
     initial[Game.first]
 }
 
-run {game_trace} for 1 Board, 1 Game
+run {game_trace} for 1 Board, 1 Game, 5 Int

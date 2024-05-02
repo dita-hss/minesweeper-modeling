@@ -24,7 +24,6 @@ fun MIN: one Int { 0 }
 fun MAXCOL: one Int { 3 }
 fun MAXROW: one Int { 3 }
 -- TODO: come up with a good equation that determines the number of mines based on board dimensions
--- John commen: do not know how to do this (division), but usually for minesweeper, for every 5 to 7 squares there is a mine 
 fun MAXMINES: one Int { 7 }
 
 -- make sure that all boards are a certain size
@@ -62,24 +61,19 @@ pred adjacentMinesPopulate[b:Board, row:Int, col:Int]{
         b.mines[add[row,-1]][add[col,-1]]]
 }
 
--- reveal adjacent cells if the adjacent cells do not have mines
-pred revealAdjacentCells[b: Board, row: Int, col: Int] {
-------------TODO: implement this
-}
-
 -- win condition
 pred won[b: Board]{
     -- cells with mines are still hidden and cells without mines are revealed
     all row, col : Int | {
-        (row >= MIN && row <= MAXCOL && col >= MIN && col <= MAXROW && b.mines[row][col] = 1) implies { b.cells[row][col] = Hidden }
-        (row >= MIN && row <= MAXCOL && col >= MIN && col <= MAXROW && b.mines[row][col] = 0) implies { b.cells[row][col] = Revealed }       
+        (row >= MIN && row <= MAXCOL && col >= MIN && col <= MAXROW && b.mines[row][col] = 1) implies {b.cells[row][col] = Hidden}
+        (row >= MIN && row <= MAXCOL && col >= MIN && col <= MAXROW && b.mines[row][col] = 0) implies {b.cells[row][col] = Revealed}       
     }
 }
 
 -- lose condition
 pred lost[b: Board] {
     -- a loss is a trace where any mine is revealed
-    some row, col : Int | (row >= MIN && row <= MAXCOL && col >= MIN && col <= MAXROW && b.mines[row][col] = 1) implies { b.cells[row][col] = Revealed }
+    some row, col : Int | (row >= MIN && row <= MAXCOL && col >= MIN && col <= MAXROW && b.mines[row][col] = 1) implies b.cells[row][col] = Revealed
 }
 
 -- do nothing condition - no cell state has changed. 
@@ -90,14 +84,14 @@ pred doNothing[pre, post: Board] {
 }
 
 -- what should happen when a player makes a move
-pred openTile[pre: Board, post: Board, row: Int, col: Int] {
-    --the cell is hidden in the pre board state, it should be revealed in the post board state
+pred openTile[pre, post: Board, row: Int, col: Int] {
+    -- if the cell is hidden, it should be revealed
     pre.cells[row][col] = Hidden
     post.cells[row][col] = Revealed
 }
 
 -- maintain the boards previous state except for the cell that was 'clicked' on
-pred maintainPreviousBoard[pre: Board, post: Board, row: Int, col: Int] {
+pred maintainPreviousBoard[pre, post: Board, row: Int, col: Int] {
     all r, c: Int | (r != row || c != col) implies {
         post.cells[r][c] = pre.cells[r][c]
         post.mines[r][c] = pre.mines[r][c]
@@ -121,10 +115,8 @@ pred game_trace {
     -- the first board is one with no previous board
     no prev: Board | Game.next[prev] = Game.first
 
-    -- there exists some next board 
     all b: Board | some Game.next[b] implies {
-        -- for some row, col
-        some row, col: Int | {
+        one row, col: Int | {
             --maintain the previous board state
             maintainPreviousBoard[b, Game.next[b], row, col]
             --row and col does not have a mine
@@ -135,4 +127,28 @@ pred game_trace {
     }
 }
 
-run {game_trace} for 4 Board, 1 Game for {next is linear}
+-- optimizer to limit the scope of variables and improve performance
+inst optimizer {
+    Board = `Board0 + `Board1 + `Board2 + `Board3 + `Board4 + `Board5
+    Game = `Game0
+    CellState = `Hidden0 + `Revealed0 + `Ignored0
+    Hidden = `Hidden0
+    Revealed = `Revealed0
+    Ignored = `Ignored0
+
+    -- set up the board so that indices and values are within allowable bounds
+    cells in Board -> 
+                (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8) -> 
+                (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8) -> 
+                (Hidden + Revealed + Ignored)
+    mines in Board -> 
+                (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8) -> 
+                (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8) -> 
+                (0 + 1)
+    adjacentMines in Board -> 
+                (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8) -> 
+                (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8) -> 
+                (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8)
+}
+
+run {game_trace} for 6 Board, 1 Game for {optimizer}

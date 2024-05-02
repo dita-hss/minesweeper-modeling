@@ -1,8 +1,8 @@
 require("d3");
 d3.selectAll("svg > *").remove();
 
-const numRows = 5; // MAXROW + 1
-const numCols = 5; // MAXCOL + 1
+const numRows = 4; // MAXROW + 1
+const numCols = 4; // MAXCOL + 1
 const cellSize = 20;
 const boardsPerColumn = 5;
 
@@ -93,6 +93,8 @@ function printBoard(board, xoffset, yoffset) {
         value = "H";
       } else if (state == "[Ignored0]") {
         value = "I";
+      } else if (state == "[Revealed0]") {
+        value = "R";
       } else {
         //place holder for now- add flagged and revealed states
         value = "";

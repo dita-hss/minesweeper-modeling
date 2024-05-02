@@ -1,8 +1,8 @@
 require("d3");
 d3.selectAll("svg > *").remove();
 
-const numRows = 4; // MAXROW + 1
-const numCols = 4; // MAXCOL + 1
+const numRows = 5; // MAXROW + 1
+const numCols = 5; // MAXCOL + 1
 const cellSize = 20;
 const boardsPerColumn = 5;
 
@@ -58,7 +58,8 @@ function printMinesBoard(xoffset, yoffset) {
     for (let col = 0; col < numCols; col++) {
       let hasMine = Board.atom("Board0").mines[row][col];
       //printValue(-10, 4, xoffset, yoffset, SolutionBoard.atom("SolutionBoard0").mines[row][col]);
-      let displayChar = hasMine == "[1]" ? "M" : "#";
+      let displayChar =
+        hasMine == "[1]" ? "M" : Board.atom("Board0").adjacentMines[row][col];
       printValue(row, col, xoffset, yoffset, displayChar);
     }
   }

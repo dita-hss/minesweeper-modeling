@@ -25,28 +25,28 @@ fun MAXCOL: one Int { 7 }
 fun MAXROW: one Int { 7 }
 -- TODO: come up with a good equation that determines the number of mines based on board dimensions (John or Amanda)
 -- John commen: do not know how to do this (division), but usually for minesweeper, for every 5 to 7 squares there is a mine 
-fun MAXMINES: one Int { 3 }
+fun MAXMINES: one Int { 7 }
 
 -- make sure that all boards are a certain size
 pred wellformed[b: Board] {
     -- out of bounds
-    all x: Int, y: Int | (x < MIN || x > MAXCOL || y < MIN || y > MAXROW) implies {b.cells[x][y] = Ignored
+    all x: Int, y: Int | (x < MIN or x > MAXCOL or y < MIN or y > MAXROW) implies {b.cells[x][y] = Ignored
                                                                                     Board.mines[x][y] = 0}
                                                                                     
     -- in bounds                                                                                
-    all x: Int, y: Int | (x >= MIN && x <= MAXCOL && y >= MIN && y <= MAXROW) implies{ b.cells[x][y] != Ignored 
+    all x: Int, y: Int | (x >= MIN and x <= MAXCOL and y >= MIN and y <= MAXROW) implies{ b.cells[x][y] != Ignored 
                                                                                        Board.mines[x][y] = 0 or Board.mines[x][y] = 1}
     
     -- no more than 4 mines
     #{row, col: Int | Board.mines[row][col] = 1} = MAXMINES
 
      -- cells will show the adjacent Mines
-    all x,y: Int|(x >= MIN && x <= MAXCOL && y >= MIN && y <= MAXROW) implies{ adjacentMinesPopulate[b,x,y] }
+    all x,y: Int|(x >= MIN and x <= MAXCOL and y >= MIN and y <= MAXROW) implies{ adjacentMinesPopulate[b,x,y] }
 }
 
 -- initial board has all cells hidden
 pred initial[b: Board] {
-    all x: Int, y: Int | (x >= MIN && x <= MAXCOL && y >= MIN && y <= MAXROW) implies { b.cells[x][y] = Hidden }
+    all x: Int, y: Int | (x >= MIN and x <= MAXCOL and y >= MIN and y <= MAXROW) implies { b.cells[x][y] = Hidden }
 }
 
 -- count the number of adjacent mines 
@@ -130,7 +130,7 @@ pred maintainPreviousBoard[pre: Board, post: Board, row: Int, col: Int] {
 pred won[b: Board]{
     -- cells with mines are still hidden and cells without mines are revealed
     all row, col : Int | {
-        (row >= MIN && row <= MAXCOL && col >= MIN && col <= MAXROW) implies { 
+        (row >= MIN and row <= MAXCOL and col >= MIN and col <= MAXROW) implies { 
             b.mines[row][col] = 1 implies { b.cells[row][col] = Hidden }
             b.mines[row][col] = 0 implies { b.cells[row][col] = Revealed }
         }       
@@ -140,7 +140,7 @@ pred won[b: Board]{
 -- lose condition
 pred lost[b: Board] {
     -- a loss is a trace where any mine is revealed
-    some row, col : Int | (row >= MIN && row <= MAXCOL && col >= MIN && col <= MAXROW && b.mines[row][col] = 1) implies { b.cells[row][col] = Revealed }
+    some row, col : Int | (row >= MIN and row <= MAXCOL and col >= MIN and col <= MAXROW and b.mines[row][col] = 1) implies { b.cells[row][col] = Revealed }
 }
 
 -- do nothing condition - no cell state has changed. 
@@ -189,11 +189,11 @@ pred game_trace_dummy {
     }
 
 }
--- TODO: optimizer for ints (John)
-
--- TODO: trace that tries to click on a square with the least risk of hitting a mine (John or Amanda)
-    -- weighted by how the number of adjacent mines 0s, 1s, 2s, 3s, 4s, etc.
-
--- TODO: begin testing (Amanda)
 
 run { game_trace_dummy } for 7 Board, 1 Game for { next is linear }
+
+--------------------------------------------------------------------------------
+
+
+
+--run { game_trace_smart } for 7 Board, 1 Game for { next is linear }

@@ -24,7 +24,6 @@ fun MIN: one Int { 0 }
 fun MAXCOL: one Int { 3 }
 fun MAXROW: one Int { 3 }
 -- TODO: come up with a good equation that determines the number of mines based on board dimensions (John or Amanda)
--- John commen: do not know how to do this (division), but usually for minesweeper, for every 5 to 7 squares there is a mine 
 fun MAXMINES: one Int { 3 }
 
 -- make sure that all boards are a certain size
@@ -64,28 +63,32 @@ pred adjacentMinesPopulate[b:Board, row:Int, col:Int]{
 
 -- reveal adjacent cells if the adjacent cells do not have mines
 pred revealAdjacentCells[pre: Board, post: Board, row: Int, col: Int] {
-    all x: Int, y: Int | {
-        (
-            -- northwest
-            (x = add[row, -1] and y = add[col, -1]) or
-            -- north
-            (x = add[row, -1] and y = col) or
-            -- northeast
-            (x = add[row, -1] and y = add[col, 1]) or 
-            -- west
-            (x = row and y = add[col, -1]) or
-            -- east
-            (x = row and y = add[col, 1]) or
-            -- southwest  
-            (x = add[row, 1] and y = add[col, -1]) or
-            -- south
-            (x = add[row, 1] and y = col) or
-             -- southeast
-            (x = add[row, 1] and y = add[col, 1])
-        ) 
-        implies {
-            -- if the cell is safe with no mines and it is hidden -> then it should be revealed
-            post.cells[x][y] = Revealed 
+    pre.adjacentMines[row][col] = 0 implies{
+        all x: Int, y: Int | {
+            (
+                -- northwest
+                (x = add[row, -1] and y = add[col, -1]) or
+                -- north
+                (x = add[row, -1] and y = col) or
+                -- northeast
+                (x = add[row, -1] and y = add[col, 1]) or 
+                -- west
+                (x = row and y = add[col, -1]) or
+                -- east
+                (x = row and y = add[col, 1]) or
+                -- southwest  
+                (x = add[row, 1] and y = add[col, -1]) or
+                -- south
+                (x = add[row, 1] and y = col) or
+                -- southeast
+                (x = add[row, 1] and y = add[col, 1])
+            ) 
+            implies {
+                -- if the cell is safe with no mines and it is hidden -> then it should be revealed
+                (pre.mines[x][y] = 0 and pre.cells[x][y] = Hidden) implies { post.cells[x][y] = Revealed }
+                -- otherwise, the cell should remain hidden
+                else { post.cells[x][y] = pre.cells[x][y] }
+            }
         }
     }
     -- all other cells remains unchanged
@@ -93,34 +96,6 @@ pred revealAdjacentCells[pre: Board, post: Board, row: Int, col: Int] {
                               (c = add[col, -1] or c = col or c = add[col, 1])) implies { post.cells[r][c] = pre.cells[r][c] }
     -- the state of the mines and adjacent mines should remain the same
     all r, c: Int | {
-        post.mines[r][c] = pre.mines[r][c]
-        post.adjacentMines[r][c] = pre.adjacentMines[r][c]
-    }
-}
-
--- what should happen when a player makes a move
-pred openTile[pre: Board, post: Board, row: Int, col: Int] {
-    --the cell is hidden in the pre board state, it should be revealed in the post board state
-    pre.cells[row][col] = Hidden
-    post.cells[row][col] = Revealed
-
-    --if the cell has adjacent mines, then only the tile is revealed- else the adjacent cells are revealed
-    pre.adjacentMines[row][col] = 0 implies { revealAdjacentCells[pre, post, row, col] }
-    pre.adjacentMines[row][col] != 0 implies { 
-        -- all other cells remains unchanged
-        all r: Int, c: Int | not (r = row and c = col ) implies { post.cells[r][c] = pre.cells[r][c] }
-        -- the state of the mines and adjacent mines should remain the same
-        all r, c: Int | {
-            post.mines[r][c] = pre.mines[r][c]
-            post.adjacentMines[r][c] = pre.adjacentMines[r][c]
-        }
-     }
-}
-
--- maintain the boards previous state except for the cell that was 'clicked' on
-pred maintainPreviousBoard[pre: Board, post: Board, row: Int, col: Int] {
-    all r, c: Int | (r != row || c != col) implies {
-        post.cells[r][c] = pre.cells[r][c]
         post.mines[r][c] = pre.mines[r][c]
         post.adjacentMines[r][c] = pre.adjacentMines[r][c]
     }
@@ -137,6 +112,7 @@ pred won[b: Board]{
     }
 }
 
+
 -- lose condition
 pred lost[b: Board] {
     -- a loss is a trace where any mine is revealed
@@ -152,10 +128,33 @@ pred doNothing[pre, post: Board] {
   }
 }
 
+-- what should happen when a player makes a move
+pred openTile[pre: Board, post: Board, row: Int, col: Int] {
+    --the cell is hidden in the pre board state, it should be revealed in the post board state
+    pre.cells[row][col] = Hidden
+    post.cells[row][col] = Revealed
+}
+
+-- maintain the boards previous state except for the cell that was 'clicked' on
+pred maintainPreviousBoard[pre: Board, post: Board, row: Int, col: Int] {
+    all r, c: Int | (r != row || c != col) implies {
+        post.cells[r][c] = pre.cells[r][c]
+        post.mines[r][c] = pre.mines[r][c]
+        post.adjacentMines[r][c] = pre.adjacentMines[r][c]
+    }
+}
 
 -- cell does not have a mine
 pred noMine[b: Board, row: Int, col: Int] {
     b.mines[row][col] = 0
+}
+
+-- row col in bounds 
+pred inBounds[x:Int,y:Int]{
+    x >= MIN
+    x <= MAXCOL
+    y >= MIN
+    y <= MAXROW
 }
 
 -- so far : traces that follows basic rule of dont click on a mine
@@ -173,7 +172,9 @@ pred game_trace_dummy {
     all b: Board | some Game.next[b] implies {
         -- for some row, col
         some row, col: Int | {
+            -- more conditions for a valid move, will not touch as I don't understand all this code
             -- if the game is won, do nothing
+            -- check for lost as well
             won[b] => doNothing[b, Game.next[b]] else {
                 --maintain the previous board state
                 //maintainPreviousBoard[b, Game.next[b], row, col]
@@ -182,18 +183,68 @@ pred game_trace_dummy {
                 --if the cell is hidden, it should be revealed
                 openTile[b, Game.next[b], row, col]
                 -- reveal adjacent cells if the adjacent cells do not have mines
-                //revealAdjacentCells[b, Game.next[b], row, col]
+                revealAdjacentCells[b, Game.next[b], row, col]
             }
         }
-        
     }
-
 }
 -- TODO: optimizer for ints (John)
 
--- TODO: trace that tries to click on a square with the least risk of hitting a mine (John or Amanda)
-    -- weighted by how the number of adjacent mines 0s, 1s, 2s, 3s, 4s, etc.
+-- 
 
+-- : Algos, Algos, Algos: Practically extra conditions for a valid move each one encapsulates the logic for the last 
+-- checks if prestate board statifies a condition and if it does then it has to more there 
+
+// pred adjacentHiddenChecker[b:Board,row,col:Int]{
+//     b.cells[row][add[col,1]] = Hidden or
+//     b.cells[row][add[col,-1]] = Hidden or
+//     b.cells[add[row,1]][col] = Hidden or
+//     b.cells[add[row,-1]][col] = Hidden or
+//     b.cells[add[row,1]][add[col,1]] = Hidden or 
+//     b.cells[add[row,1]][add[col,-1]] = Hidden or
+//     b.cells[add[row,-1]][add[col,1]] = Hidden or
+//     b.cells[add[row,-1]][add[col,-1]] = Hidden or
+// }
+
+// --checks if Board has some riskless position it can move to
+// --check if revelead as well
+// pred ableToGatherSpace[pre: Board]{
+//     some r,c: Int|{
+//         inBounds[r,c]
+//         pre.adjacentMines[r][c] == 0
+//         adjacentHiddenChecker[pre,r,c]
+//     }
+// }
+
+// --checks for intial state, then checks for the 0 adjacent mine tile riskless move
+// pred dumbAlgo[pre: Board, row: Int, col: Int]{
+//     --if intial Board any row col 
+//     intial[pre] implies inBounds[row,col]
+
+//     ableToGatherSpace[pre] implies (pre.adjacentMines[row][col] == 0 and adjacentHiddenChecker[pre,row,col]) else {inBounds[row,col]}
+// }
+
+
+
+--Checks a certain tile only has one adjacent hidden tile 
+
+--Checks adjacent tiles to see if there is one that adjacentMines = 1
+
+
+-- Definition, one adjacent mine tile auto flag: a tile that is revealed and has only one adjacent mine around it and all but one tile that is around it is either hidden or ignored
+--checks for intial state, then checks for the 0 adjacent mine tile riskless move, checks that there isn't an adjacent one mine tile auto flag
+// pred kindaSmartAlgo[pre: Board, row: Int, col: Int]{
+//     --if intial Board any row col 
+//     intial[pre] implies inBounds[row,col]
+//     -- if it is able to gather space then it has to move to that position
+//     ableToGatherSpace[pre] implies (pre.adjacentMines[row][col] == 0 and adjacentHiddenChecker[pre,row,col] and pre.cells[row][col] = Revealed)
+//     --Makes sure it is not a row,col pair that is garrenteed to be a mine
+
+// }
+
+// pred relativelySmartestAlgo[pre: Board, row: Int, col: Int]{
+    
+// }
 -- TODO: begin testing (Amanda)
 
 run { game_trace_dummy } for 7 Board, 1 Game for { next is linear }

@@ -9,18 +9,41 @@ const boardsPerColumn = 5;
 function printValue(row, col, xoffset, yoffset, value) {
   let invertedRow = numRows - row - 1;
 
+  let fillColor;
+  //mine
+  if (value === "M") {
+    fillColor = "red";
+  //hidden
+  } else if (value === "H") {
+    fillColor = "blue";
+  //ignored
+  } else if (value === "I") {
+    fillColor = "gray";
+  //else revealed
+  } else {
+    switch (parseInt(value)) {
+      case 1:
+        fillColor = "orange";
+        break;
+      case 2:
+        fillColor = "green";
+        break;
+      case 3:
+        fillColor = "purple";
+        break;
+      case 4:
+        fillColor = "red";
+        break;
+      default:
+        fillColor = "black";
+        break;
+    }
+  }
+
   d3.select(svg)
     .append("text")
-    .style(
-      "fill",
-      value === "H"
-        ? "blue"
-        : value === "I"
-        ? "gray"
-        : value === "M"
-        ? "red"
-        : "black"
-    )
+    .style("fill", fillColor)
+    .style("font-weight", "bold")
     .attr("x", xoffset + col * cellSize + cellSize / 2)
     .attr("y", yoffset + invertedRow * cellSize + cellSize / 2)
     .attr("text-anchor", "middle")
@@ -59,7 +82,9 @@ function printMinesBoard(xoffset, yoffset) {
       let hasMine = Board.atom("Board0").mines[row][col];
       //printValue(-10, 4, xoffset, yoffset, SolutionBoard.atom("SolutionBoard0").mines[row][col]);
       let displayChar =
-        hasMine == "[1]" ? "M" : Board.atom("Board0").adjacentMines[row][col];
+        hasMine == "[1]"
+          ? "M"
+          : Board.atom("Board0").adjacentMines[row][col].toString();
       printValue(row, col, xoffset, yoffset, displayChar);
     }
   }
@@ -87,6 +112,7 @@ function printBoard(board, xoffset, yoffset) {
   for (let row = 0; row < numRows; row++) {
     for (let col = 0; col < numCols; col++) {
       let adjacentMines = board.adjacentMines[row][col];
+
       let state = board.cells[row][col];
       console.log(state);
       let value = "";
@@ -96,7 +122,7 @@ function printBoard(board, xoffset, yoffset) {
         value = "I";
       } else if (state == "[Revealed0]") {
         if (adjacentMines != "[0]") {
-          value = adjacentMines;
+          value = adjacentMines.toString();
         } else {
           value = "R";
         }
@@ -122,15 +148,17 @@ function printBoard(board, xoffset, yoffset) {
 
 var yOffset = numRows * cellSize + 10;
 var xOffset = 5;
+var boardCount = 0;
 
 for (let b = 0; b <= 20; b++) {
   if (Board.atom("Board" + b) != null) {
     printBoard(Board.atom("Board" + b), xOffset, yOffset);
-    yOffset += numRows * cellSize + 10;
+    yOffset += numRows * cellSize + 5;
+    boardCount++;
 
-    if (b % boardsPerColumn === 0) {
+    if (boardCount % boardsPerColumn === 0) {
       xOffset += numCols * cellSize + 10;
-      yOffset = 1;
+      yOffset = 5;
     }
   }
 }

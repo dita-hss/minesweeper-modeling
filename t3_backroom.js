@@ -86,6 +86,7 @@ if (Board !== undefined) {
 function printBoard(board, xoffset, yoffset) {
   for (let row = 0; row < numRows; row++) {
     for (let col = 0; col < numCols; col++) {
+      let adjacentMines = board.adjacentMines[row][col];
       let state = board.cells[row][col];
       console.log(state);
       let value = "";
@@ -94,7 +95,11 @@ function printBoard(board, xoffset, yoffset) {
       } else if (state == "[Ignored0]") {
         value = "I";
       } else if (state == "[Revealed0]") {
-        value = "R";
+        if (adjacentMines != "[0]") {
+          value = adjacentMines;
+        } else {
+          value = "R";
+        }
       } else {
         //place holder for now- add flagged and revealed states
         value = "";

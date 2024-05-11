@@ -21,8 +21,8 @@ one sig Game {
 -- constants for rows and columns
 fun MIN: one Int { 0 }
 -- TODO: we can make board bigger but for now it is 4x4 (John or Amanda)
-fun MAXCOL: one Int { 3 }
-fun MAXROW: one Int { 3 }
+fun MAXCOL: one Int { 7 }
+fun MAXROW: one Int { 7 }
 -- TODO: come up with a good equation that determines the number of mines based on board dimensions (John or Amanda)
 -- John commen: do not know how to do this (division), but usually for minesweeper, for every 5 to 7 squares there is a mine 
 fun MAXMINES: one Int { 3 }

@@ -209,7 +209,7 @@ inst optimizer {
 }
 
 
-run { game_trace_dummy } for 12 Board, 1 Game, 5 Int for {optimizer next is linear}
+run { game_trace_perfectInfo } for 12 Board, 1 Game, 5 Int for {optimizer next is linear}
 
 --------------------------------------------------------------------------------
 

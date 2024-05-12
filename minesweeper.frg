@@ -153,7 +153,7 @@ pred noMine[b: Board, row: Int, col: Int] {
 }
 
 -- so far : traces that follows basic rule of dont click on a mine
-pred game_trace_dummy {
+pred game_trace_perfectInfo {
     -- all boards are wellformed
     all board: Board | { wellformed[board] }
 

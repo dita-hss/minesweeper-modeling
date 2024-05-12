@@ -21,11 +21,11 @@ one sig Game {
 -- constants for rows and columns
 fun MIN: one Int { 0 }
 -- TODO: we can make board bigger but for now it is 4x4 (John or Amanda)
-fun MAXCOL: one Int { 11 }
-fun MAXROW: one Int { 11 }
+fun MAXCOL: one Int { 4 }
+fun MAXROW: one Int { 4 }
 -- TODO: come up with a good equation that determines the number of mines based on board dimensions (John or Amanda)
 -- John commen: do not know how to do this (division), but usually for minesweeper, for every 5 to 7 squares there is a mine 
-fun MAXMINES: one Int { 12 }
+fun MAXMINES: one Int { 3 }
 
 -- make sure that all boards are a certain size
 pred wellformed[b: Board] {
@@ -67,6 +67,7 @@ pred adjacentMinesPopulate[b:Board, row:Int, col:Int]{
 -- reveal adjacent cells if the adjacent cells do not have mines
 pred revealAdjacentCells[pre: Board, post: Board, row: Int, col: Int] {
     all x: Int, y: Int | {
+        (x >= MIN and x <= MAXCOL and y >= MIN and y <= MAXROW) 
         (
             -- northwest
             (x = add[row, -1] and y = add[col, -1]) or
@@ -194,21 +195,21 @@ inst optimizer {
 
     -- set up the board so that indices and values are within allowable bounds
     cells in Board -> 
-                (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12) -> 
-                (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12) -> 
+                (0 + 1 + 2 + 3 + 4) -> 
+                (0 + 1 + 2 + 3 + 4) -> 
                 (Hidden + Revealed + Ignored)
     mines in Board -> 
-                (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12) -> 
-                (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12) -> 
+                (0 + 1 + 2 + 3 + 4) -> 
+                (0 + 1 + 2 + 3 + 4) -> 
                 (0 + 1)
     adjacentMines in Board -> 
-                (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12) -> 
-                (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12) -> 
-                (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8)
+                (0 + 1 + 2 + 3 + 4) -> 
+                (0 + 1 + 2 + 3 + 4) -> 
+                (0 + 1 + 2 )
 }
 
 
-run { game_trace_dummy } for 7 Board, 1 Game, 5 Int for {optimizer next is linear}
+run { game_trace_dummy } for 12 Board, 1 Game, 5 Int for {optimizer next is linear}
 
 --------------------------------------------------------------------------------
 

@@ -1,10 +1,13 @@
 require("d3");
 d3.selectAll("svg > *").remove();
 
-const numRows = 5; // MAXROW + 1
-const numCols = 5; // MAXCOL + 1
+//manual changes
+const totalBoards = 7;
+const numRows = 8; // MAXROW + 1
+const numCols = 8; // MAXCOL + 1
+
 const cellSize = 20;
-const boardsPerColumn = 5;
+const boardsPerColumn = 3;
 
 function printValue(row, col, xoffset, yoffset, value) {
   let invertedRow = numRows - row - 1;
@@ -13,13 +16,13 @@ function printValue(row, col, xoffset, yoffset, value) {
   //mine
   if (value === "M") {
     fillColor = "red";
-  //hidden
+    //hidden
   } else if (value === "H") {
     fillColor = "blue";
-  //ignored
+    //ignored
   } else if (value === "I") {
     fillColor = "gray";
-  //else revealed
+    //else revealed
   } else {
     switch (parseInt(value)) {
       case 1:
@@ -121,7 +124,7 @@ function printBoard(board, xoffset, yoffset) {
       } else if (state == "[Ignored0]") {
         value = "I";
       } else if (state == "[Revealed0]") {
-        if (adjacentMines != "[0]") {
+        if (adjacentMines != "[0]" && adjacentMines != null) {
           value = adjacentMines.toString();
         } else {
           value = "R";
@@ -150,15 +153,37 @@ var yOffset = numRows * cellSize + 10;
 var xOffset = 5;
 var boardCount = 0;
 
-for (let b = 0; b <= 20; b++) {
-  if (Board.atom("Board" + b) != null) {
-    printBoard(Board.atom("Board" + b), xOffset, yOffset);
+var currentBoard = 1;
+var nextBoard = null;
+var firstBoard = true;
+x = 0;
+
+while (x < totalBoards) {
+  x++;
+
+  if (firstBoard) {
+    printBoard(Board.atom("Board0"), xOffset, yOffset);
     yOffset += numRows * cellSize + 5;
     boardCount++;
+    firstBoard = false;
+    nextBoard = Game.atom("Game0").next[Board0];
+  } else {
+    //printValue(-10, 4, 5, 5,  Board.atom(Board0));
+    printBoard(Board.atom(currentBoard.toString()), xOffset, yOffset);
+    yOffset += numRows * cellSize + 5;
+    boardCount++;
+    nextBoard = Game.atom("Game0").next[nextBoard];
+  }
 
-    if (boardCount % boardsPerColumn === 0) {
-      xOffset += numCols * cellSize + 10;
-      yOffset = 5;
-    }
+  if (boardCount % boardsPerColumn === 0) {
+    xOffset += numCols * cellSize + 10;
+    yOffset = 5;
+  }
+
+  if (nextBoard !== undefined) {
+    currentBoard = nextBoard;
+  } else {
+    currentBoard = null;
+    break;
   }
 }

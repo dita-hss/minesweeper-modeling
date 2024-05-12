@@ -151,4 +151,4 @@ inst optimizer {
                 (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8)
 }
 
-run {game_trace} for 6 Board, 1 Game for {optimizer}
+run {game_trace} for 6 Board, 1 Game for optimizer, next is linear

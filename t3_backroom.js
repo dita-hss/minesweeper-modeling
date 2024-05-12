@@ -1,8 +1,8 @@
 require("d3");
 d3.selectAll("svg > *").remove();
 
-const numRows = 4; // MAXROW + 1
-const numCols = 4; // MAXCOL + 1
+const numRows = 5; // MAXROW + 1
+const numCols = 5; // MAXCOL + 1
 const cellSize = 20;
 const boardsPerColumn = 5;
 

@@ -1,6 +1,6 @@
 #lang forge
 
-option run_sterling "t3_backroom.js"
+option run_sterling "minesweeper.js"
 
 abstract sig CellState {}
 one sig Hidden, Revealed, Ignored extends CellState {}

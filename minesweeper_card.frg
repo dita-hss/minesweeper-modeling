@@ -1,6 +1,6 @@
 #lang forge
 
-option run_sterling "t3_backroom.js"
+option run_sterling "minesweeper.js"
 
 
 --General Representation of MindSweeper
@@ -23,11 +23,11 @@ one sig Game {
 -- constants for rows and columns
 fun MIN: one Int { 0 }
 -- TODO: we can make board bigger but for now it is 4x4 (John or Amanda)
-fun MAXCOL: one Int { 7 }
-fun MAXROW: one Int { 7 }
+fun MAXCOL: one Int { 4 }
+fun MAXROW: one Int { 4 }
 -- TODO: come up with a good equation that determines the number of mines based on board dimensions (John or Amanda)
 -- John commen: do not know how to do this (division), but usually for minesweeper, for every 5 to 7 squares there is a mine 
-fun MAXMINES: one Int { 7 }
+fun MAXMINES: one Int { 5 }
 
 -- make sure that all boards are a certain size
 pred wellformed[b: Board] {
@@ -178,7 +178,7 @@ pred inBounds[x:Int,y:Int]{
 --check if revelead as well
 pred ableToGatherSpace[pre: Board]{
     some r,c: Int|{
-        inBounds[r,c]
+        //inBounds[r,c]
         pre.adjacentMines[r][c] = 0
         pre.cells[r][c] = Revealed
         adjacentHiddenChecker[pre,r,c]
@@ -195,64 +195,55 @@ pred dumbAlgo[pre: Board, row: Int, col: Int]{
     not ableToGatherSpace[pre] implies inBounds[row,col]
 }
 
---Checks a certain tile only has one adjacent hidden tile 
-pred OneAdjacentHiddens[pre: Board, row: Int, col: Int]{
-    #{x: Int, y: Int |
-    (
-        -- northwest
-        (x = add[row, -1] and y = add[col, -1]) or
-        -- north
-        (x = add[row, -1] and y = col) or
-        -- northeast
-        (x = add[row, -1] and y = add[col, 1]) or 
-        -- west
-        (x = row and y = add[col, -1]) or
-        -- east
-        (x = row and y = add[col, 1]) or
-        -- southwest  
-        (x = add[row, 1] and y = add[col, -1]) or
-        -- south
-        (x = add[row, 1] and y = col) or
-        -- southeast
-        (x = add[row, 1] and y = add[col, 1])
-    ) implies pre.cells[x][y]=Hidden}=1
-    --for every adjacent tile, count the amount of tiles that are hidden equals to 1
-}
 
+--Checks a certain tile only has one adjacent hidden tile and Revealed
+pred OneAdjacentHiddens[pre: Board, row: Int, col: Int]{
+--for every adjacent tile, count the amount of tiles that are hidden equals to 1
+#{x,y: Int |(x >= add[row,-1] and x <= add[row,1] and y >= add[col,-1] and y <= add[col,1]) and pre.cells[x][y]=Hidden}=1
+}
 
 --Checks adjacent tiles to see if there is one that adjacentMines = 1 and then uses a helper function to check if that one tile has all but one hidden tiles
 --Uses the same logic a player would use rather than just taking the information of the board itself, example of imperfect information
 pred definetlyAMineOneTile[pre: Board, row: Int, col: Int] {
     pre.cells[row][col] = Hidden
-    all x: Int, y: Int | {
-            (
-                -- northwest
-                (x = add[row, -1] and y = add[col, -1]) or
-                -- north
-                (x = add[row, -1] and y = col) or
-                -- northeast
-                (x = add[row, -1] and y = add[col, 1]) or 
-                -- west
-                (x = row and y = add[col, -1]) or
-                -- east
-                (x = row and y = add[col, 1]) or
-                -- southwest  
-                (x = add[row, 1] and y = add[col, -1]) or
-                -- south
-                (x = add[row, 1] and y = col) or
-                -- southeast
-                (x = add[row, 1] and y = add[col, 1])
-            ) 
-            implies {
-                -- if the adjacent cell is has 1 adjacent mine and it is revealed and that adjacent cell has only one hidden square that is adjacent, this statement is true 
-                (pre.adjacentMines[x][y] = 1 and pre.cells[x][y] = Revealed and OneAdjacentHiddens[pre,x,y])
-            }
+    --It is a one mine tile that only has one hidden adjacent cell, is a 1 tile and is already revealed
+    all x,y: Int |{
+        (x >= add[row,-1] and x <= add[row,1]and y >= add[col,-1] and y <= add[col,1] and y != col and x != row)
+        not (pre.cells[x][y] = Revealed and pre.adjacentMines[x][y] =1 and OneAdjacentHiddens[pre,x,y])
     }
 }
 
+
 -- Definition, definetlyAMineOneTile: a tile that is revealed and has only one adjacent mine around it and all but one tile that is around it is either hidden or ignored
-----At first, due to optimizer there will be a move that is in bounds, then checks for the 0 adjacent mine tile riskless move, checks that there isn't an adjacent one mine tile auto flag
+----At first, due to optimizer there will be a move that is in bounds, then checks for the 0 adjacent mine tile riskless move, checks that it is not moving on a tile mine using one layer of logic
 pred kindaSmartAlgo[pre: Board, row: Int, col: Int] {
+    --At first, due to optimizer there will be a move that is in bounds
+    --if ableToGatherSpace, as in populate the part of the board for information, it implies that, that row,col move does not have adjacent Mines,
+    -- but has adjacent hidden tiles
+    ableToGatherSpace[pre] implies (pre.adjacentMines[row][col] = 0 and pre.cells[row][col] = Revealed and adjacentHiddenChecker[pre,row,col])
+    not (definetlyAMineOneTile[pre,row,col])
+    --Makes sure it is not a row,col pair that is garrenteed to be a mine in a simple case, the simple case is to check if it a one adjacent mine tile with all but one of its adjacent tiles hidden
+    --(which is the tile that the row,col we don't want to be on) else it just makes a generally valid move
+}
+
+--checks to see if the revealed cells is adjacent to a one mine tile
+pred adjacentToAMineOneTile[pre: Board, row: Int, col: Int]{
+    #{x,y: Int |(x >= add[row,-1] and x <= add[row,1]and y >= add[col,-1] and y <= add[col,1]) and definetlyAMineOneTile[pre,x,y]}=1
+}
+
+--Checks if adjacent to a cell that only is an 1 adjacent mine cell and is revealed 
+pred abletoMakeLeapInLogic[pre: Board, row: Int, col: Int]{
+    pre.cells[row][col] = Hidden
+    #{x,y: Int |(x >= add[row,-1] and x <= add[row,1]and y >= add[col,-1] and y <= add[col,1])and
+    --Checks to see if is adjacent to a revealed one tile that is adjacent to a one mine tile
+    pre.cells[x][y] = Revealed and
+    pre.adjacentMines[x][y] = 1 and 
+    adjacentToAMineOneTile[pre,x,y]}>=1
+}
+
+--Makes the Same Logic Patterns as the last agorithim to start but adds a second layer of inference to the definetlyAMineOneTile predicate, as if there is a 
+--move that is adjacent to a tile with a only one adjacent mine, where that cell is adjacent to a tile that you definetly know is a mine then it is a safe tile.
+pred relativelySmartestAlgo[pre: Board, row: Int, col: Int]{
     --At first, due to optimizer there will be a move that is in bounds
     --if ableToGatherSpace, as in populate the part of the board for information, it implies that, that row,col move does not have adjacent Mines, 
     -- but has adjacent hidden tiles
@@ -260,53 +251,10 @@ pred kindaSmartAlgo[pre: Board, row: Int, col: Int] {
    --Makes sure it is not a row,col pair that is garrenteed to be a mine in a simple case, the simple case is to check if it a one adjacent mine tile with all but one of its adjacent tiles hidden
    --(which is the tile that the row,col we don't want to be on) else it just makes a generally valid move
    not definetlyAMineOneTile[pre,row,col]
+   abletoMakeLeapInLogic[pre,row,col] 
+   --Will make random guess if abletoMakeLeapInLogic isn't avialable
+   not abletoMakeLeapInLogic[pre,row,col] implies inBounds[row,col]
 }
-
---Checks if adjacent to a cell that only is an 1 adjacent mine cell and is revealed
-pred ableToMakeLeapInLogic[pre: Board, row: Int, col: Int]{
-    pre.cells[row][col] = Hidden
-    all x: Int, y: Int | {
-            (
-                -- northwest
-                (x = add[row, -1] and y = add[col, -1]) or
-                -- north
-                (x = add[row, -1] and y = col) or
-                -- northeast
-                (x = add[row, -1] and y = add[col, 1]) or 
-                -- west
-                (x = row and y = add[col, -1]) or
-                -- east
-                (x = row and y = add[col, 1]) or
-                -- southwest  
-                (x = add[row, 1] and y = add[col, -1]) or
-                -- south
-                (x = add[row, 1] and y = col) or
-                -- southeast
-                (x = add[row, 1] and y = add[col, 1])
-            ) 
-            implies {
-                -- if the adjacent cell is has 1 adjacent mine and it is revealed and that adjacent cell has only one hidden square that is adjacent
-                pre.adjacentMines[x][y] = 1 and pre.cells[x][y] = Revealed and definetlyAMineOneTile[pre,x,y]
-            }
-    }
-}
-
---Makes the Same Logic Patterns as the last agorithim to start but adds a second layer of inference to the definetlyAMineOneTile predicate, as if there is a 
---move that is adjacent to a tile with a only one adjacent mine, where that cell is adjacent to a tile that you definetly know is a mine then it is a safe tile.
-
-pred relativelySmartestAlgo[pre: Board, row: Int, col: Int]{
-    --At first, due to optimizer there will be a move that is in bounds
-    --if ableToGatherSpace, as in populate the part of the board for information, it implies that, that row,col move does not have adjacent Mines, 
-    -- but has adjacent hidden tiles
-   ableToGatherSpace[pre] implies (pre.adjacentMines[row][col] = 0 and pre.cells[row][col] = Revealed and adjacentHiddenChecker[pre,row,col])
-   --(which is the tile that the row,col we don't want to be on) else it just makes a generally valid move
-   not ableToGatherSpace[pre] implies (not definetlyAMineOneTile[pre,row,col])
-   ableToMakeLeapInLogic[pre,row,col] implies ((pre.cells[row][col] = Hidden) and (pre.mines[row][col]=0))
-   --Makes sure it is not a row,col pair that is garrenteed to be a mine in a simple case, the simple case is to check if it a one adjacent mine tile with all but one of its adjacent tiles hidden
-   --(which is the tile that the row,col we don't want to be on) else it just makes a generally valid move
-
-}
-
 
 --TRACES
 -- so far :  Traces that follows basic rule of dont click on a mine, the perfect representation of knowing what the right move is
@@ -423,7 +371,7 @@ pred game_trace_relativelySmartestAlgo {
 
 -- optimizer to limit the scope of variables and improve performance
 inst optimizer {
-    Board = `Board0 + `Board1 + `Board2 + `Board3 + `Board4 + `Board5 
+    Board = `Board0 + `Board1 + `Board2 + `Board3 + `Board4 + `Board5 + `Board6
     Game = `Game0
     CellState = `Hidden0 + `Revealed0 + `Ignored0
     Hidden = `Hidden0
@@ -432,26 +380,25 @@ inst optimizer {
 
     -- set up the board so that indices and values are within allowable bounds
     cells in Board -> 
-                (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7) -> 
-                (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7) -> 
+                (0 + 1 + 2 + 3 + 4) -> 
+                (0 + 1 + 2 + 3 + 4) -> 
                 (Hidden + Revealed + Ignored)
     mines in Board -> 
-                (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7) -> 
-                (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7 )-> 
+                (0 + 1 + 2 + 3 + 4) -> 
+                (0 + 1 + 2 + 3 + 4) -> 
                 (0 + 1)
     adjacentMines in Board -> 
-                (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7) -> 
-                (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7) -> 
+                (0 + 1 + 2 + 3 + 4) -> 
+                (0 + 1 + 2 + 3 + 4) -> 
                 (0 + 1 + 2)
 }
 
---run { game_trace_perfectInfo } for 8 Board, 1 Game for {optimizer next is linear}
+--run { game_trace_perfectInfo } for 7 Board, 1 Game for {optimizer next is linear}
 
---run { game_trace_DumbAlgo } for 6 Board, 1 Game for {optimizer next is linear}
+--run { game_trace_DumbAlgo } for 7 Board, 1 Game for {optimizer next is linear}
 
-run { game_trace_kindaSmartAlgo } for 9 Board, 1 Game for {optimizer next is linear}
+--run { game_trace_kindaSmartAlgo } for 7 Board, 1 Game for {optimizer next is linear}
 
---run { game_trace_relativelySmartestAlgo } for 8 Board, 1 Game for {optimizer next is linear}
-
+run { game_trace_relativelySmartestAlgo } for 7 Board, 1 Game for {optimizer next is linear}
 
 

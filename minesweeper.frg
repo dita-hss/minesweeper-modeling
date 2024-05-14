@@ -3,7 +3,7 @@
 option run_sterling "minesweeper.js"
 --General Representation of MindSweeper
 abstract sig CellState {}
-one sig Hidden, Revealed, Ignored extends CellState {}
+one sig Hidden, Revealed extends CellState {}
 
 sig Board {
     cells: pfunc Int -> Int -> CellState,
@@ -34,8 +34,9 @@ pred wellformed[b: Board] {
     //                                                                                 Board.mines[x][y] = 0}
                                                                                     
     -- in bounds                                                                                
-    all x: Int, y: Int | (x >= MIN and x <= MAXCOL and y >= MIN and y <= MAXROW) implies{ b.cells[x][y] != Ignored 
-                                                                                       Board.mines[x][y] = 0 or Board.mines[x][y] = 1}
+    all x: Int, y: Int | (x >= MIN and x <= MAXCOL and y >= MIN and y <= MAXROW) implies { 
+                                                                                    (b.cells[x][y] = Revealed or b.cells[x][y] = Hidden )
+                                                                                    (Board.mines[x][y] = 0 or Board.mines[x][y] = 1)}
     
     #{row, col: Int |  (row >= MIN and row <= MAXCOL and col >= MIN and col <= MAXROW) and Board.mines[row][col] = 1} = MAXMINES
     -- no more than 4 mines
@@ -415,18 +416,17 @@ pred game_trace_relativelySmartestAlgo {
 
 -- optimizer to limit the scope of variables and improve performance
 inst optimizer {
-    Board = `Board0 + `Board1 + `Board2 + `Board3 + `Board4 + `Board5 + `Board6 + `Board7 + `Board8 + `Board9 + `Board10 + `Board11
+    Board = `Board0 + `Board1 + `Board2 + `Board3 + `Board4 + `Board5
     Game = `Game0
-    CellState = `Hidden0 + `Revealed0 + `Ignored0
+    CellState = `Hidden0 + `Revealed0
     Hidden = `Hidden0
     Revealed = `Revealed0
-    Ignored = `Ignored0
 
     -- set up the board so that indices and values are within allowable bounds
     cells in Board -> 
                 (0 + 1 + 2 + 3 + 4) -> 
                 (0 + 1 + 2 + 3 + 4) -> 
-                (Hidden + Revealed + Ignored)
+                (Hidden + Revealed)
     mines in Board -> 
                 (0 + 1 + 2 + 3 + 4) -> 
                 (0 + 1 + 2 + 3 + 4) -> 
@@ -437,13 +437,13 @@ inst optimizer {
                 (0 + 1 + 2)
 }
 
---run { game_trace_perfectInfo } for 17 Board, 1 Game for {optimizer next is linear}
+run { game_trace_perfectInfo } for 6 Board, 1 Game for {optimizer next is linear}
 
 --run { game_trace_DumbAlgo } for 17 Board, 1 Game for {optimizer next is linear}
 
 --run { game_trace_kindaSmartAlgo } for 17 Board, 1 Game for {optimizer next is linear}
 
-run { game_trace_relativelySmartestAlgo } for 17 Board, 1 Game for {optimizer next is linear}
+--run { game_trace_relativelySmartestAlgo } for 17 Board, 1 Game for {optimizer next is linear}
 
     // cells in Board -> 
     //             (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7) -> 

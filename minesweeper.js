@@ -2,9 +2,9 @@ require("d3");
 d3.selectAll("svg > *").remove();
 
 //manual changes
-const totalBoards = 7;
-const numRows = 7; // MAXROW + 1
-const numCols = 7; // MAXCOL + 1
+const totalBoards = 6;
+const numRows = 5; // MAXROW + 1
+const numCols = 5; // MAXCOL + 1
 
 const cellSize = 20;
 const boardsPerColumn = 3;

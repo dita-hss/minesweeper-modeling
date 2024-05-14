@@ -3,16 +3,16 @@
 open "t3.frg"
 
 test suite for wellformed {
-
-    -- ensure that a wellformed board has cells and mines are ignored and set to zero outside the defined board range
-    test expect { testOutOfBounds: {
-        some b: Board | {
-            -- all cells outside the board range are ignored and have no mines
-            all x: Int, y: Int | (x < MIN or x > MAXCOL or y < MIN or y > MAXROW) implies { b.cells[x][y] = Ignored and b.mines[x][y] = 0 }
-            -- wellformed board
-            wellformed[b]
-        }
-    } is sat }
+    -- after optimizer, this test is no longer needed
+    // -- ensure that a wellformed board has cells and mines are ignored and set to zero outside the defined board range
+    // test expect { testOutOfBounds: {
+    //     some b: Board | {
+    //         -- all cells outside the board range are ignored and have no mines
+    //         all x: Int, y: Int | (x < MIN or x > MAXCOL or y < MIN or y > MAXROW) implies { b.cells[x][y] = Ignored and b.mines[x][y] = 0 }
+    //         -- wellformed board
+    //         wellformed[b]
+    //     }
+    // } is sat }
 
     -- cells within the boundaries of the board are not ignored and have mines set to either 0 or 1
     test expect { testInBounds: {

@@ -3,11 +3,12 @@ d3.selectAll("svg > *").remove();
 
 //manual changes
 const totalBoards = 7;
-const numRows = 8; // MAXROW + 1
-const numCols = 8; // MAXCOL + 1
+const numRows = 7; // MAXROW + 1
+const numCols = 7; // MAXCOL + 1
 
 const cellSize = 20;
 const boardsPerColumn = 3;
+var gameWon = true;
 
 function printValue(row, col, xoffset, yoffset, value) {
   let invertedRow = numRows - row - 1;
@@ -115,6 +116,7 @@ function printBoard(board, xoffset, yoffset) {
   for (let row = 0; row < numRows; row++) {
     for (let col = 0; col < numCols; col++) {
       let adjacentMines = board.adjacentMines[row][col];
+      let hasMine = board.mines[row][col];
 
       let state = board.cells[row][col];
       console.log(state);
@@ -126,6 +128,9 @@ function printBoard(board, xoffset, yoffset) {
       } else if (state == "[Revealed0]") {
         if (adjacentMines != "[0]" && adjacentMines != null) {
           value = adjacentMines.toString();
+        } else if (hasMine == "[1]") {
+          value = "M";
+          gameWon = false;
         } else {
           value = "R";
         }
@@ -186,4 +191,10 @@ while (x < totalBoards) {
     currentBoard = null;
     break;
   }
+}
+
+if (gameWon) {
+  printValue(-20, 10, 10, 10, "Game Won");
+} else {
+  printValue(-20, 10, 10, 10, "Game Lost");
 }

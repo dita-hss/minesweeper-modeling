@@ -194,7 +194,7 @@ while (x < totalBoards) {
 }
 
 if (gameWon) {
-  printValue(-20, 10, 10, 10, "Game Won");
+  printValue(-25, 10, 10, 10, "Game Won or Unfinished");
 } else {
   printValue(-20, 10, 10, 10, "Game Lost");
 }

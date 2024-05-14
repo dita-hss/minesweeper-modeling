@@ -2,7 +2,7 @@
 
 > #### Amanda and John
 
-[Video Demo](https://drive.google.com/file/d/1K3ILQuIyuEs45hzJLomFeHG84I67srLA/view?usp=sharing)
+[Video Demo](https://drive.google.com/file/d/1wMX0tiECoEjyWINV9-U8WxvIk4WXbtim/view?usp=sharing)
 
 ## Overall Breakdown:
 

@@ -3,7 +3,7 @@
 option run_sterling "minesweeper.js"
 --General Representation of MindSweeper
 abstract sig CellState {}
-one sig Hidden, Revealed extends CellState {}
+one sig Hidden, Revealed, Ignored extends CellState {}
 
 sig Board {
     cells: pfunc Int -> Int -> CellState,
@@ -21,11 +21,11 @@ one sig Game {
 -- constants for rows and columns
 fun MIN: one Int { 0 }
 -- TODO: we can make board bigger but for now it is 4x4 (John or Amanda)
-fun MAXCOL: one Int { 4 }
-fun MAXROW: one Int { 4 }
+fun MAXCOL: one Int { 3 }
+fun MAXROW: one Int { 3 }
 -- TODO: come up with a good equation that determines the number of mines based on board dimensions (John or Amanda)
 -- John commen: do not know how to do this (division), but usually for minesweeper, for every 5 to 7 squares there is a mine 
-fun MAXMINES: one Int { 4 }
+fun MAXMINES: one Int { 3 }
 
 -- make sure that all boards are a certain size
 pred wellformed[b: Board] {
@@ -34,9 +34,8 @@ pred wellformed[b: Board] {
     //                                                                                 Board.mines[x][y] = 0}
                                                                                     
     -- in bounds                                                                                
-    all x: Int, y: Int | (x >= MIN and x <= MAXCOL and y >= MIN and y <= MAXROW) implies { 
-                                                                                    (b.cells[x][y] = Revealed or b.cells[x][y] = Hidden )
-                                                                                    (Board.mines[x][y] = 0 or Board.mines[x][y] = 1)}
+    all x: Int, y: Int | (x >= MIN and x <= MAXCOL and y >= MIN and y <= MAXROW) implies{ b.cells[x][y] != Ignored 
+                                                                                       Board.mines[x][y] = 0 or Board.mines[x][y] = 1}
     
     #{row, col: Int |  (row >= MIN and row <= MAXCOL and col >= MIN and col <= MAXROW) and Board.mines[row][col] = 1} = MAXMINES
     -- no more than 4 mines
@@ -100,6 +99,7 @@ pred revealAdjacentCells[pre: Board, post: Board, row: Int, col: Int] {
     }
 }
 
+-- checks if the cells adjacent to the target cell are hidden
 pred adjacentHiddenChecker[b:Board,row: Int,col: Int]{
     b.cells[row][add[col,1]] = Hidden or
     b.cells[row][add[col,-1]] = Hidden or
@@ -155,7 +155,6 @@ pred doNothing[pre, post: Board] {
     post.adjacentMines[row][col] = pre.adjacentMines[row][col]
   }
 }
-
 
 -- cell does not have a mine
 pred noMine[b: Board, row: Int, col: Int] {
@@ -263,27 +262,27 @@ pred definetlyAMineTwoTile[pre: Board, row: Int, col: Int] {
     (pre.cells[add[col, 1]][add[col, 1]] = Revealed and pre.adjacentMines[add[col, 1]][add[col, 1]] =2 and twoAdjacentHiddens[pre,add[col, 1],add[col, 1]])
 }
 
+pred OneTileAdjToAMineOneTile[pre:Board,row,col:Int]{
+    not(all x,y : Int|{
+        (x >= add[row,-1] and x <= add[row,1] and y >= add[col,-1] and y <= add[col,1] and x != row and y != col)
+        not(definetlyAMineOneTile[pre,x,y])
+        }
+    )
+}
+
 pred adjacentOneTile[pre:Board,row,col:Int]{
-    #{x,y: Int |(x >= add[row,-1] and x <= add[row,1] and y >= add[col,-1] and y <= add[col,1] and x != row and y != col) implies (pre.cells[x][y]=Revealed and pre.adjacentMines[x][y]=1)}>=1
+    //#{x,y: Int |(x >= add[row,-1] and x <= add[row,1] and y >= add[col,-1] and y <= add[col,1] and x != row and y != col) implies (pre.cells[x][y]=Revealed and pre.adjacentMines[x][y]=1)}>=1
+    not(all x,y : Int|{(x >= add[row,-1] and x <= add[row,1] and y >= add[col,-1] and y <= add[col,1] and x != row and y != col)
+        not(pre.cells[x][y]=Revealed and pre.adjacentMines[x][y]=1 and OneTileAdjToAMineOneTile[pre,row,col])
+    })
 }
 
-pred adjacentToMineOneTile[pre:Board,row,col:Int]{
-    definetlyAMineOneTile[pre,add[row, -1],add[col, -1]] or
-    definetlyAMineOneTile[pre,add[row, -1],col] or
-    definetlyAMineOneTile[pre,add[row, -1],add[col, 1]] or
-    definetlyAMineOneTile[pre,row,add[col, -1]] or
-    definetlyAMineOneTile[pre,row,add[col, -1]] or
-    definetlyAMineOneTile[pre,add[row, 1],add[row, 1]] or
-    definetlyAMineOneTile[pre,add[row, 1],col] or
-    definetlyAMineOneTile[pre,add[col, 1],add[col, 1]]
-}
-
+--Tried to go with the some, but took too long to run, have had better sucsees in the past with the not all demorgan's law
 pred adjacentToOneMineAndRevealedOneTile[pre:Board]{
-    some row,col : Int|{
-        pre.cells[row][col] = Hidden and adjacentToMineOneTile[pre,row,col] and adjacentOneTile[pre,row,col]
-    }
+    not(all row,col : Int|{
+        not(pre.cells[row][col] = Hidden and adjacentOneTile[pre,row,col])
+    })
 }
-
 
 --Makes the Same Logic Patterns as the last agorithim to start but adds a second layer of inference to the definetlyAMineOneTile predicate, as if there is a 
 --move that is adjacent to a tile with a only one adjacent mine, where that cell is adjacent to a tile that you definetly know is a mine then it is a safe tile.
@@ -293,13 +292,12 @@ pred relativelySmartestAlgo[pre: Board, row: Int, col: Int]{
     -- but has adjacent hidden tiles
    ableToGatherSpace[pre] implies (pre.adjacentMines[row][col] = 0 and pre.cells[row][col] = Revealed and adjacentHiddenChecker[pre,row,col])
    --(which is the tile that the row,col we don't want to be on) else it just makes a generally valid move
-   adjacentToOneMineAndRevealedOneTile[pre] implies pre.cells[row][col] = Hidden and adjacentToMineOneTile[pre,row,col] and adjacentOneTile[pre,row,col]
+   adjacentToOneMineAndRevealedOneTile[pre] implies pre.cells[row][col] = Hidden and adjacentOneTile[pre,row,col] and OneTileAdjToAMineOneTile[pre,row,col]
    --Makes sure it is not a row,col pair that is garrenteed to be a mine in a simple case, the simple case is to check if it a one adjacent mine tile with all but one of its adjacent tiles hidden
    --(which is the tile that the row,col we don't want to be on) else it just makes a generally valid move
    not definetlyAMineOneTile[pre,row,col]
-   //not definetlyAMineTwoTile[pre,row,col]
+   not definetlyAMineTwoTile[pre,row,col]
 }
-
 
 --TRACES
 -- so far :  Traces that follows basic rule of dont click on a mine, the perfect representation of knowing what the right move is
@@ -416,47 +414,34 @@ pred game_trace_relativelySmartestAlgo {
 
 -- optimizer to limit the scope of variables and improve performance
 inst optimizer {
-    Board = `Board0 + `Board1 + `Board2 + `Board3 + `Board4 + `Board5
+    Board = `Board0 + `Board1 + `Board2 + `Board3 + `Board4
     Game = `Game0
-    CellState = `Hidden0 + `Revealed0
+    CellState = `Hidden0 + `Revealed0 + `Ignored0
     Hidden = `Hidden0
     Revealed = `Revealed0
+    Ignored = `Ignored0
 
     -- set up the board so that indices and values are within allowable bounds
     cells in Board -> 
-                (0 + 1 + 2 + 3 + 4) -> 
-                (0 + 1 + 2 + 3 + 4) -> 
-                (Hidden + Revealed)
+                (0 + 1 + 2 + 3+ 4) -> 
+                (0 + 1 + 2 + 3+ 4) ->  
+                (Hidden + Revealed + Ignored)
     mines in Board -> 
-                (0 + 1 + 2 + 3 + 4) -> 
-                (0 + 1 + 2 + 3 + 4) -> 
+                (0 + 1 + 2 + 3+ 4) -> 
+                (0 + 1 + 2 + 3+ 4) -> 
                 (0 + 1)
     adjacentMines in Board -> 
-                (0 + 1 + 2 + 3 + 4) -> 
-                (0 + 1 + 2 + 3 + 4) -> 
+                (0 + 1 + 2 + 3+ 4) -> 
+                (0 + 1 + 2 + 3+ 4) ->  
                 (0 + 1 + 2)
 }
 
-run { game_trace_perfectInfo } for 6 Board, 1 Game for {optimizer next is linear}
+--run { game_trace_perfectInfo } for 17 Board, 1 Game for {optimizer next is linear}
 
---run { game_trace_DumbAlgo } for 17 Board, 1 Game for {optimizer next is linear}
+--run { game_trace_DumbAlgo } for 15 Board, 1 Game for {optimizer next is linear}
 
 --run { game_trace_kindaSmartAlgo } for 17 Board, 1 Game for {optimizer next is linear}
 
---run { game_trace_relativelySmartestAlgo } for 17 Board, 1 Game for {optimizer next is linear}
-
-    // cells in Board -> 
-    //             (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7) -> 
-    //             (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7) -> 
-    //             (Hidden + Revealed + Ignored)
-    // mines in Board -> 
-    //             (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7) -> 
-    //             (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7) -> 
-    //             (0 + 1)
-    // adjacentMines in Board -> 
-    //             (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7) -> 
-    //             (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7) -> 
-    //             (0 + 1 + 2 + 3 + 4 + 5)
-
+--run { game_trace_relativelySmartestAlgo } for 5 Board, 1 Game for {optimizer next is linear}
 
 

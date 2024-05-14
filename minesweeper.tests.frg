@@ -1,6 +1,18 @@
 #lang forge
 
-open "t3.frg"
+open "minesweeper.frg"
+
+-- This file tests the general setup of the minesweeper game. The following test suites can be found: 
+    -- wellformed: tests the wellformed predicate
+    -- initial: tests the initial predicate
+    -- adjacentMinesPopulate: tests the adjacentMinesPopulate predicate
+    -- revealAdjacentCells: tests the revealAdjacentCells predicate
+    -- openTile: tests the openTile predicate
+    -- won: tests the won predicate
+    -- lost: tests the lost predicate
+    -- doNothing: tests the doNothing predicate
+    -- noMine: tests the noMine predicate
+    -- inBounds: tests the inBounds predicate
 
 test suite for wellformed {
     -- after optimizer, this test is no longer needed
@@ -44,19 +56,20 @@ test suite for wellformed {
         }
     } is sat }
 
-    -- the out of bounds cells are not ignored and has no mines
-    test expect { testOutOfBoundsNotSat: {
-        some b: Board |{ 
-            -- out of bounds
-            some x: Int, y: Int | {
-                (x < MIN or x > MAXCOL or y < MIN or y > MAXROW)
-                -- not ignored
-                b.cells[x][y] != Ignored
-            }
-            -- wellformed board
-            wellformed[b]
-        }
-    } is unsat }
+    -- also not needed because of removed wellformed line
+    // -- the out of bounds cells are not ignored and has no mines
+    // test expect { testOutOfBoundsNotSat: {
+    //     some b: Board |{ 
+    //         -- out of bounds
+    //         some x: Int, y: Int | {
+    //             (x < MIN or x > MAXCOL or y < MIN or y > MAXROW)
+    //             -- not ignored
+    //             b.cells[x][y] != Ignored
+    //         }
+    //         -- wellformed board
+    //         wellformed[b]
+    //     }
+    // } is unsat }
 
     -- cells within the boundaries of the board are not ignored
     test expect { testCellsInBounds: {
@@ -181,6 +194,29 @@ test suite for revealAdjacentCells {
         }
     } is sat }
 
+}
+
+test suite for lost {
+    -- game lose condition when a mine is revealed
+    test expect { testGameLostCondition: {
+        some b: Board | {
+            -- board where a mine is revealed at (1, 1)
+            b.mines[1][1] = 1
+            b.cells[1][1] = Revealed
+            lost[b]
+        }
+    } is sat }
+
+    -- game is not lost when no mines are revealed
+    test expect { testGameNotLostConditionNoMineRevealed: {
+        some b: Board | {
+            -- board where no mines are revealed
+            all row, col: Int | {
+                b.mines[row][col] = 1 implies b.cells[row][col] != Revealed
+            }
+            not lost[b]
+        }
+    } is sat }
 }
 
 test suite for openTile {
@@ -354,9 +390,67 @@ test suite for doNothing {
     } is unsat }
 }
 
-test suite for game_trace_dummy {
-    -- valid game trace is sat
-    test expect { validGameTrace: {
-        game_trace_dummy
+test suite for noMine {
+    -- test a cell that does not have a mine
+    test expect { testCellWithoutMine: {
+        all b: Board | {
+            -- set up a board state where (1, 1) does not have a mine
+            b.mines[1][1] = 0
+            noMine[b, 1, 1]
+        }
     } is sat }
+
+    -- test a cell that has a mine
+    test expect { testCellWithMine: {
+        all b: Board | {
+            -- set up a board state where (1, 1) has a mine
+            b.mines[1][1] = 1
+            noMine[b, 1, 1]
+        }
+    } is unsat }
 }
+
+test suite for inBounds {
+    -- coordinates that are within bounds
+    test expect { testInBoundsTrue: {
+        some x, y: Int | {
+            (x >= MIN and x <= MAXCOL and y >= MIN and y <= MAXROW)
+            inBounds[x, y]
+        }
+    } is sat }
+
+    -- coordinates that has x out of bounds
+    test expect { testInBoundsFalseXOutOfBounds: {
+        all x, y: Int | {
+            -- x out of bounds
+            (x < MIN or x > MAXCOL)
+            -- y within bounds
+            y >= MIN and y <= MAXROW
+            inBounds[x, y]
+        }
+    } is unsat }
+
+    -- coordinates that has y out of bounds
+    test expect { testInBoundsFalseYOutOfBounds: {
+        all x, y: Int | {
+            -- x within bounds
+            x >= MIN and x <= MAXCOL
+            -- y out of bounds
+            (y < MIN or y > MAXROW)
+            inBounds[x, y]
+        }
+    } is unsat }
+
+    -- coordinates with both x and y out of bounds
+    test expect { testInBoundsFalseBothOutOfBounds: {
+        all x, y: Int | {
+            -- x out of bounds
+            (x < MIN or x > MAXCOL)
+            -- y out of bounds
+            (y < MIN or y > MAXROW)
+            inBounds[x, y]
+        }
+    } is unsat }
+}
+
+

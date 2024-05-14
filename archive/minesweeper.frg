@@ -1,6 +1,8 @@
 #lang forge
 
-option run_sterling "minesweeper.js"
+option run_sterling "t3_backroom.js"
+
+
 --General Representation of MindSweeper
 abstract sig CellState {}
 one sig Hidden, Revealed, Ignored extends CellState {}
@@ -21,11 +23,11 @@ one sig Game {
 -- constants for rows and columns
 fun MIN: one Int { 0 }
 -- TODO: we can make board bigger but for now it is 4x4 (John or Amanda)
-fun MAXCOL: one Int { 4 }
-fun MAXROW: one Int { 4 }
+fun MAXCOL: one Int { 7 }
+fun MAXROW: one Int { 7 }
 -- TODO: come up with a good equation that determines the number of mines based on board dimensions (John or Amanda)
 -- John commen: do not know how to do this (division), but usually for minesweeper, for every 5 to 7 squares there is a mine 
-fun MAXMINES: one Int { 4 }
+fun MAXMINES: one Int { 7 }
 
 -- make sure that all boards are a certain size
 pred wellformed[b: Board] {
@@ -192,33 +194,60 @@ pred dumbAlgo[pre: Board, row: Int, col: Int]{
     --might seem counter intuitive but P -> Q when Q is always true is true
     not ableToGatherSpace[pre] implies inBounds[row,col]
 }
---Checks a certain tile only has one adjacent hidden tile and Revealed
+
+--Checks a certain tile only has one adjacent hidden tile 
 pred OneAdjacentHiddens[pre: Board, row: Int, col: Int]{
+    #{x: Int, y: Int |
+    (
+        -- northwest
+        (x = add[row, -1] and y = add[col, -1]) or
+        -- north
+        (x = add[row, -1] and y = col) or
+        -- northeast
+        (x = add[row, -1] and y = add[col, 1]) or 
+        -- west
+        (x = row and y = add[col, -1]) or
+        -- east
+        (x = row and y = add[col, 1]) or
+        -- southwest  
+        (x = add[row, 1] and y = add[col, -1]) or
+        -- south
+        (x = add[row, 1] and y = col) or
+        -- southeast
+        (x = add[row, 1] and y = add[col, 1])
+    ) implies pre.cells[x][y]=Hidden}=1
     --for every adjacent tile, count the amount of tiles that are hidden equals to 1
-    #{x,y: Int |(x >= add[row,-1] and x <= add[row,1] and y >= add[col,-1] and y <= add[col,1] and x != row and y != col) implies pre.cells[x][y]=Hidden}=1
 }
+
 
 --Checks adjacent tiles to see if there is one that adjacentMines = 1 and then uses a helper function to check if that one tile has all but one hidden tiles
 --Uses the same logic a player would use rather than just taking the information of the board itself, example of imperfect information
 pred definetlyAMineOneTile[pre: Board, row: Int, col: Int] {
-    --It is a one mine tile that adjacent cell, is a 1 tile and is already revealed
-    pre.cells[row][col] = Hidden and (
-    -- northwest
-    (pre.cells[add[row, -1]][add[col, -1]] = Revealed and pre.adjacentMines[add[row, -1]][add[col, -1]] =1 and OneAdjacentHiddens[pre,add[row, -1],add[col, -1]]) or
-    -- north
-    (pre.cells[add[row, -1]][col] = Revealed and pre.adjacentMines[add[row, -1]][col] =1 and OneAdjacentHiddens[pre,add[row, -1],col]) or
-    -- northeast
-    (pre.cells[add[row, -1]][add[col, 1]] = Revealed and pre.adjacentMines[add[row, -1]][add[col, 1]] =1 and OneAdjacentHiddens[pre,add[row, -1],add[col, 1]]) or 
-    -- west
-    (pre.cells[row][add[col, -1]] = Revealed and pre.adjacentMines[row][add[col, -1]] =1 and OneAdjacentHiddens[pre,row,add[col, -1]]) or
-    -- east
-    (pre.cells[row][add[col,1]] = Revealed and pre.adjacentMines[row][add[col,1]] =1 and OneAdjacentHiddens[pre,row,add[col, 1]] ) or
-    -- southwest  
-    (pre.cells[add[row, 1]][add[row, -1]] = Revealed and pre.adjacentMines[add[row, 1]][add[row, -1]] =1 and OneAdjacentHiddens[pre,add[row, 1],add[row, -1]]) or
-    -- south
-    (pre.cells[add[row, 1]][col] = Revealed and pre.adjacentMines[add[row, 1]][col] =1 and OneAdjacentHiddens[pre,add[row, 1],col]) or
-    -- southeast
-    (pre.cells[add[col, 1]][add[col, 1]] = Revealed and pre.adjacentMines[add[col, 1]][add[col, 1]] =1 and OneAdjacentHiddens[pre,add[col, 1],add[col, 1]]))
+    pre.cells[row][col] = Hidden
+    all x: Int, y: Int | {
+            (
+                -- northwest
+                (x = add[row, -1] and y = add[col, -1]) or
+                -- north
+                (x = add[row, -1] and y = col) or
+                -- northeast
+                (x = add[row, -1] and y = add[col, 1]) or 
+                -- west
+                (x = row and y = add[col, -1]) or
+                -- east
+                (x = row and y = add[col, 1]) or
+                -- southwest  
+                (x = add[row, 1] and y = add[col, -1]) or
+                -- south
+                (x = add[row, 1] and y = col) or
+                -- southeast
+                (x = add[row, 1] and y = add[col, 1])
+            ) 
+            implies {
+                -- if the adjacent cell is has 1 adjacent mine and it is revealed and that adjacent cell has only one hidden square that is adjacent, this statement is true 
+                (pre.adjacentMines[x][y] = 1 and pre.cells[x][y] = Revealed and OneAdjacentHiddens[pre,x,y])
+            }
+    }
 }
 
 -- Definition, definetlyAMineOneTile: a tile that is revealed and has only one adjacent mine around it and all but one tile that is around it is either hidden or ignored
@@ -233,70 +262,49 @@ pred kindaSmartAlgo[pre: Board, row: Int, col: Int] {
    not definetlyAMineOneTile[pre,row,col]
 }
 
---Checks a certain tile only has one adjacent hidden tile and Revealed
-pred twoAdjacentHiddens[pre: Board, row: Int, col: Int]{
-    --for every adjacent tile, count the amount of tiles that are hidden equals to 1, changed from cardinality
-    #{x,y: Int |(x >= add[row,-1] and x <= add[row,1] and y >= add[col,-1] and y <= add[col,1] and x != row and y != col) implies pre.cells[x][y]=Hidden}=2
-}
---Checks adjacent tiles to see if there is one that adjacentMines = 1 and then uses a helper function to check if that one tile has all but one hidden tiles
---Uses the same logic a player would use rather than just taking the information of the board itself, example of imperfect information
-
-pred definetlyAMineTwoTile[pre: Board, row: Int, col: Int] {
-    --It is a one mine tile that adjacent cell, is a 1 tile and is already revealed
+--Checks if adjacent to a cell that only is an 1 adjacent mine cell and is revealed
+pred ableToMakeLeapInLogic[pre: Board, row: Int, col: Int]{
     pre.cells[row][col] = Hidden
-    -- northwest
-    (pre.cells[add[row, -1]][add[col, -1]] = Revealed and pre.adjacentMines[add[row, -1]][add[col, -1]] =2 and twoAdjacentHiddens[pre,add[row, -1],add[col, -1]]) or
-    -- north
-    (pre.cells[add[row, -1]][col] = Revealed and pre.adjacentMines[add[row, -1]][col] =2 and twoAdjacentHiddens[pre,add[row, -1],col]) or
-    -- northeast
-    (pre.cells[add[row, -1]][add[col, 1]] = Revealed and pre.adjacentMines[add[row, -1]][add[col, 1]] =2 and twoAdjacentHiddens[pre,add[row, -1],add[col, 1]]) or 
-    -- west
-    (pre.cells[row][add[col, -1]] = Revealed and pre.adjacentMines[row][add[col, -1]] =2 and twoAdjacentHiddens[pre,row,add[col, -1]]) or
-    -- east
-    (pre.cells[row][add[col,1]] = Revealed and pre.adjacentMines[row][add[col,1]] =2 and twoAdjacentHiddens[pre,row,add[col, 1]]) or
-    -- southwest  
-    (pre.cells[add[row, 1]][add[row, -1]] = Revealed and pre.adjacentMines[add[row, 1]][add[row, -1]] =2 and twoAdjacentHiddens[pre,add[row, 1],add[row, -1]]) or
-    -- south
-    (pre.cells[add[row, 1]][col] = Revealed and pre.adjacentMines[add[row, 1]][col] =2 and twoAdjacentHiddens[pre,add[row, 1],col]) or
-    -- southeast
-    (pre.cells[add[col, 1]][add[col, 1]] = Revealed and pre.adjacentMines[add[col, 1]][add[col, 1]] =2 and twoAdjacentHiddens[pre,add[col, 1],add[col, 1]])
-}
-
-pred adjacentOneTile[pre:Board,row,col:Int]{
-    #{x,y: Int |(x >= add[row,-1] and x <= add[row,1] and y >= add[col,-1] and y <= add[col,1] and x != row and y != col) implies (pre.cells[x][y]=Revealed and pre.adjacentMines[x][y]=1)}>=1
-}
-
-pred adjacentToMineOneTile[pre:Board,row,col:Int]{
-    definetlyAMineOneTile[pre,add[row, -1],add[col, -1]] or
-    definetlyAMineOneTile[pre,add[row, -1],col] or
-    definetlyAMineOneTile[pre,add[row, -1],add[col, 1]] or
-    definetlyAMineOneTile[pre,row,add[col, -1]] or
-    definetlyAMineOneTile[pre,row,add[col, -1]] or
-    definetlyAMineOneTile[pre,add[row, 1],add[row, 1]] or
-    definetlyAMineOneTile[pre,add[row, 1],col] or
-    definetlyAMineOneTile[pre,add[col, 1],add[col, 1]]
-}
-
-pred adjacentToOneMineAndRevealedOneTile[pre:Board]{
-    some row,col : Int|{
-        pre.cells[row][col] = Hidden and adjacentToMineOneTile[pre,row,col] and adjacentOneTile[pre,row,col]
+    all x: Int, y: Int | {
+            (
+                -- northwest
+                (x = add[row, -1] and y = add[col, -1]) or
+                -- north
+                (x = add[row, -1] and y = col) or
+                -- northeast
+                (x = add[row, -1] and y = add[col, 1]) or 
+                -- west
+                (x = row and y = add[col, -1]) or
+                -- east
+                (x = row and y = add[col, 1]) or
+                -- southwest  
+                (x = add[row, 1] and y = add[col, -1]) or
+                -- south
+                (x = add[row, 1] and y = col) or
+                -- southeast
+                (x = add[row, 1] and y = add[col, 1])
+            ) 
+            implies {
+                -- if the adjacent cell is has 1 adjacent mine and it is revealed and that adjacent cell has only one hidden square that is adjacent
+                pre.adjacentMines[x][y] = 1 and pre.cells[x][y] = Revealed and definetlyAMineOneTile[pre,x,y]
+            }
     }
 }
 
-
 --Makes the Same Logic Patterns as the last agorithim to start but adds a second layer of inference to the definetlyAMineOneTile predicate, as if there is a 
 --move that is adjacent to a tile with a only one adjacent mine, where that cell is adjacent to a tile that you definetly know is a mine then it is a safe tile.
+
 pred relativelySmartestAlgo[pre: Board, row: Int, col: Int]{
     --At first, due to optimizer there will be a move that is in bounds
     --if ableToGatherSpace, as in populate the part of the board for information, it implies that, that row,col move does not have adjacent Mines, 
     -- but has adjacent hidden tiles
    ableToGatherSpace[pre] implies (pre.adjacentMines[row][col] = 0 and pre.cells[row][col] = Revealed and adjacentHiddenChecker[pre,row,col])
    --(which is the tile that the row,col we don't want to be on) else it just makes a generally valid move
-   adjacentToOneMineAndRevealedOneTile[pre] implies pre.cells[row][col] = Hidden and adjacentToMineOneTile[pre,row,col] and adjacentOneTile[pre,row,col]
+   not ableToGatherSpace[pre] implies (not definetlyAMineOneTile[pre,row,col])
+   ableToMakeLeapInLogic[pre,row,col] implies ((pre.cells[row][col] = Hidden) and (pre.mines[row][col]=0))
    --Makes sure it is not a row,col pair that is garrenteed to be a mine in a simple case, the simple case is to check if it a one adjacent mine tile with all but one of its adjacent tiles hidden
    --(which is the tile that the row,col we don't want to be on) else it just makes a generally valid move
-   not definetlyAMineOneTile[pre,row,col]
-   //not definetlyAMineTwoTile[pre,row,col]
+
 }
 
 
@@ -318,7 +326,7 @@ pred game_trace_perfectInfo {
                 --maintain the previous board state
                 //maintainPreviousBoard[b, Game.next[b], row, col]
                 --dumbAlgo
-                noMine[b, row, col]
+                dumbAlgo[b, row, col]
                 --if the cell is hidden, it should be revealed
                 openTile[b, Game.next[b], row, col]
                 -- reveal adjacent cells if the adjacent cells do not have mines
@@ -415,7 +423,7 @@ pred game_trace_relativelySmartestAlgo {
 
 -- optimizer to limit the scope of variables and improve performance
 inst optimizer {
-    Board = `Board0 + `Board1 + `Board2 + `Board3 + `Board4 + `Board5 + `Board6 + `Board7 + `Board8 + `Board9 + `Board10 + `Board11
+    Board = `Board0 + `Board1 + `Board2 + `Board3 + `Board4 + `Board5 
     Game = `Game0
     CellState = `Hidden0 + `Revealed0 + `Ignored0
     Hidden = `Hidden0
@@ -424,39 +432,26 @@ inst optimizer {
 
     -- set up the board so that indices and values are within allowable bounds
     cells in Board -> 
-                (0 + 1 + 2 + 3 + 4) -> 
-                (0 + 1 + 2 + 3 + 4) -> 
+                (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7) -> 
+                (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7) -> 
                 (Hidden + Revealed + Ignored)
     mines in Board -> 
-                (0 + 1 + 2 + 3 + 4) -> 
-                (0 + 1 + 2 + 3 + 4) -> 
+                (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7) -> 
+                (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7 )-> 
                 (0 + 1)
     adjacentMines in Board -> 
-                (0 + 1 + 2 + 3 + 4) -> 
-                (0 + 1 + 2 + 3 + 4) -> 
+                (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7) -> 
+                (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7) -> 
                 (0 + 1 + 2)
 }
 
---run { game_trace_perfectInfo } for 17 Board, 1 Game for {optimizer next is linear}
+--run { game_trace_perfectInfo } for 8 Board, 1 Game for {optimizer next is linear}
 
---run { game_trace_DumbAlgo } for 17 Board, 1 Game for {optimizer next is linear}
+--run { game_trace_DumbAlgo } for 6 Board, 1 Game for {optimizer next is linear}
 
---run { game_trace_kindaSmartAlgo } for 17 Board, 1 Game for {optimizer next is linear}
+run { game_trace_kindaSmartAlgo } for 9 Board, 1 Game for {optimizer next is linear}
 
-run { game_trace_relativelySmartestAlgo } for 17 Board, 1 Game for {optimizer next is linear}
-
-    // cells in Board -> 
-    //             (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7) -> 
-    //             (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7) -> 
-    //             (Hidden + Revealed + Ignored)
-    // mines in Board -> 
-    //             (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7) -> 
-    //             (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7) -> 
-    //             (0 + 1)
-    // adjacentMines in Board -> 
-    //             (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7) -> 
-    //             (0 + 1 + 2 + 3 + 4 + 5 + 6 + 7) -> 
-    //             (0 + 1 + 2 + 3 + 4 + 5)
+--run { game_trace_relativelySmartestAlgo } for 8 Board, 1 Game for {optimizer next is linear}
 
 
 

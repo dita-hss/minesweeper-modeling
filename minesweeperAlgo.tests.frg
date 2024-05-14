@@ -582,11 +582,6 @@ test suite for definetlyAMineOneTile {
 }
 
 
-
-
-
-
-
 /// amanda - john this was from your file, but im not sure if they work because i couldnt get them to run on my computer
     -- like they dont pass or fail, they just dont run
 --------------------------------------------------------------------------------------------------------------------------------

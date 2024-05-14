@@ -288,7 +288,6 @@ pred game_trace_perfectInfo {
     
 }
 
-
 -- so far : traces that follows basic algorithim of dumbAlgo, cares about gathering information
 pred game_trace_DumbAlgo {
     -- all boards are wellformed
@@ -399,11 +398,11 @@ inst optimizer {
                 (0 + 1 + 2 + 3 + 4 +5)
 }
 
---run { game_trace_perfectInfo } for 7 Board, 1 Game for {optimizer next is linear}
+run { game_trace_perfectInfo } for 7 Board, 1 Game for {optimizer next is linear}
 
 --run { game_trace_DumbAlgo  } for 14 Board, 1 Game for {optimizer next is linear}
 
-run { game_trace_kindaSmartAlgo } for 7 Board, 1 Game for {optimizer next is linear}
+--run { game_trace_kindaSmartAlgo } for 7 Board, 1 Game for {optimizer next is linear}
 
 --run { game_trace_relativelySmartestAlgo } for 7 Board, 1 Game for {optimizer next is linear}
 

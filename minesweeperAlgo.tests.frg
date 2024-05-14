@@ -6,8 +6,16 @@ open "minesweeper.frg"
     -- adjacentHiddenChecker: tests the adjacentHiddenChecker predicate
     -- ableToGatherSpace: tests the ableToGatherSpace predicate
     -- dumbAlgo: tests the dumbAlgo predicate
-
-    -- kindaSmartAlgo: tests the kindaSmartAlgo predicate
+    -- OneAdjacentHiddens: tests the OneAdjacentHiddens predicate
+    -- definetlyAMineOneTile: tests the definetlyAMineOneTile predicate
+    -- twoAdjacentHiddens: tests the twoAdjacentHiddens predicate
+    -- definetlyAMineTwoTile: tests the definetlyAMineTwoTile predicate
+    -- adjacentOneTile: tests the adjacentOneTile predicate
+    -- adjacentToOneMineAndRevealedOneTile: tests the adjacentToOneMineAndRevealedOneTile predicate
+    -- game_trace_perfectInfo: tests the game_trace_perfectInfo predicate
+    -- game_trace_DumbAlgo: tests the game_trace_DumbAlgo predicate
+    -- game_trace_kindaSmartAlgo: tests the game_trace_kindaSmartAlgo predicate  
+    -- game_trace_relativelySmartestAlgo: tests the game_trace_relativelySmartestAlgo predicate  
 
 test suite for adjacentHiddenChecker{
     test expect{ basicSat:{
@@ -472,7 +480,7 @@ test suite for game_trace_kindaSmartAlgo {
         }
     } is sat }
 
-    -- test the first move
+    --text the first move
     test expect { testFirstMove: {
         some pre, post: Board | {
             initial[pre]
@@ -539,6 +547,74 @@ test suite for game_trace_kindaSmartAlgo {
     } is sat }
 }
 
+--these tests take a quite a few minutes to run but they do pass
+test suite for game_trace_relativelySmartestAlgo {
+    --initial board state
+    test expect { testInitialBoardState: {
+        some pre: Board | {
+            initial[pre]
+            game_trace_relativelySmartestAlgo
+            all row, col: Int | (row >= MIN and row <= MAXCOL and col >= MIN and col <= MAXROW) implies {
+                pre.cells[row][col] = Hidden
+            }
+        }
+    } is sat }
+
+    -- the first move follows the relativelySmartestAlgo pred
+    test expect { testFirstMoveRelativelySmartestAlgo: {
+        some pre, post: Board | {
+            initial[pre]
+            game_trace_relativelySmartestAlgo
+            no prev: Board | Game.next[prev] = pre
+            Game.first = pre
+            some row, col: Int | {
+                relativelySmartestAlgo[pre, row, col]
+                openTile[pre, post, row, col]
+                pre.cells[row][col] = Hidden
+                post.cells[row][col] = Revealed
+            }
+        }
+    } is sat }
+
+    -- exists a board where no mines are clickes
+    test expect { testSubsequentMovesRelativelySmartestAlgo: {
+        some pre, post: Board | {
+            game_trace_relativelySmartestAlgo
+            some row, col: Int | {
+                relativelySmartestAlgo[pre, row, col]
+                openTile[pre, post, row, col]
+                pre.cells[row][col] = Hidden
+                post.cells[row][col] = Revealed
+            }
+        }
+    } is sat }
+
+    -- win condition
+    test expect { testGameWin: {
+        some pre, post: Board | {
+            game_trace_relativelySmartestAlgo
+            all row, col: Int | {
+                (row >= MIN and row <= MAXCOL and col >= MIN and col <= MAXROW) implies {
+                    pre.mines[row][col] = 1 implies { pre.cells[row][col] = Hidden }
+                    pre.mines[row][col] = 0 implies { pre.cells[row][col] = Revealed }
+                }
+            }
+            won[pre]
+            doNothing[pre, post]
+        }
+    } is sat }
+
+    --loss condition
+    test expect { testGameLoss: {
+        some pre, post: Board | {
+            game_trace_relativelySmartestAlgo
+            pre.mines[1][1] = 1
+            pre.cells[1][1] = Revealed
+            lost[pre]
+            doNothing[pre, post]
+        }
+    } is sat }
+}
 
 
 --------------------------------------------------------------------------------------------------------------------------------
@@ -551,6 +627,7 @@ test suite for game_trace_kindaSmartAlgo {
 --------------------------------------------------------------------------------------------------------------------------------
 --------------------------------------------------------------------------------------------------------------------------------
 --------------------------------------------------------------------------------------------------------------------------------
+
 
 // pred leapInLogicBaseCaseSat{
 //     some pre: Board | { 

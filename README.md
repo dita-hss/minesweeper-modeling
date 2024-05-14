@@ -1,4 +1,4 @@
-# MineSweeper Model
+# Minesweeper Model
 
 > #### Amanda and John
 
